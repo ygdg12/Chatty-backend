@@ -8,18 +8,21 @@ import { createSocketServer } from "./lib/socket.js";
 import cors from "cors"
 
 import path from "path"
+import fs from "fs"
 // Load environment variables
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5001;
 const __dirname = path.resolve();
+const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
+const frontendDistPath = path.join(__dirname, "../frontend1/dist");
 
 // Middleware
 app.use(express.json({ limit: "10mb" }));
 app.use(cookieParser());
 app.use(cors({
-  origin:"http://localhost:5173",
+  origin: frontendUrl,
   credentials:true
 }))
 
@@ -27,13 +30,11 @@ app.use(cors({
 app.use("/api/auth", authRoutes);
 app.use("/api/message", messageRoutes);
 
-if(process.env.NODE_ENV=== "production"){
-  app.use(express.static(path.join(__dirname,"../frontend1/dist")))
-
- app.get("/*", (req, res) => {
-  res.sendFile(path.join(__dirname, "../frontend1", "dist", "index.html"));
-});
-
+if (process.env.NODE_ENV === "production" && fs.existsSync(frontendDistPath)) {
+  app.use(express.static(frontendDistPath));
+  app.get("/*", (req, res) => {
+    res.sendFile(path.join(frontendDistPath, "index.html"));
+  });
 }
 
 // Create Socket.IO server
