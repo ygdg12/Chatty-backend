@@ -22,12 +22,12 @@ const frontendDistPath = path.join(__dirname, "../frontend1/dist");
 app.set("trust proxy", 1);
 
 // Middleware
-app.use(express.json({ limit: "10mb" }));
-app.use(cookieParser());
 app.use(cors({
   origin: frontendUrl,
   credentials:true
 }))
+app.use(cookieParser());
+app.use(express.json({ limit: "10mb" }));
 
 // Routes
 app.use("/api/auth", authRoutes);

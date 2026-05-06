@@ -1,4 +1,4 @@
-import jwt, { decode } from "jsonwebtoken"
+import jwt from "jsonwebtoken"
 import User from "../models/user.model.js"
 
 export const protectRoute =async (req,res,next)=>{
@@ -12,7 +12,13 @@ export const protectRoute =async (req,res,next)=>{
             return res.status(500).json({message:"Server configuration error"});
         }
         
-        const decoded =jwt.verify(token,process.env.JWT_SECRET)
+        let decoded;
+        try {
+            decoded = jwt.verify(token, process.env.JWT_SECRET)
+        } catch (error) {
+            return res.status(401).json({message:"Unauthorized token"})
+        }
+
         if(!decoded){
             return res.status(401).json({message:"unauthorized token"})
         }

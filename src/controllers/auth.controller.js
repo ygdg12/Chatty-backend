@@ -82,13 +82,10 @@ export const login = async (req, res) => {
 
 export const logout = (req, res) => {
     try {
-      const clearCookieOptions = {
-        ...getJwtCookieOptions(),
-        maxAge: 0
-      };
-      res.cookie("jwt","", clearCookieOptions)
+      res.clearCookie("jwt", getJwtCookieOptions());
       res.status(200).json({message:"Logged out good"})
     } catch (error) {
+      res.status(500).json({ message: "Internal Server Error" });
     }
 };
 

@@ -3,6 +3,15 @@ import User from "../models/user.model.js";
 import Message from "../models/message.model.js";
 import { getReceiverSocketId, io } from "../lib/socket.js";
 
+const formatMessage = (message) => ({
+  _id: message._id.toString(),
+  senderId: message.senderId?.toString?.() || message.senderId,
+  receiverId: message.receiverId?.toString?.() || message.receiverId,
+  text: message.text || "",
+  image: message.image || "",
+  createdAt: message.createdAt
+});
+
 // Get all users except logged-in user
 export const getUserForSidebar = async (req, res) => {
   try {
@@ -28,7 +37,7 @@ export const getMessages = async (req, res) => {
       ]
     }).sort({ createdAt: 1 });
 
-    res.status(200).json(messages);
+    res.status(200).json(messages.map(formatMessage));
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Internal server error", error: error.message });
@@ -50,14 +59,20 @@ export const sendMessages = async (req, res) => {
 
     const newMessage = new Message({ senderId, receiverId, text, image: imageUrl });
     await newMessage.save();
+    const formattedMessage = formatMessage(newMessage);
 
-    // Emit message to receiver via socket if online
+    // Emit message to receiver and sender via socket if online
     const receiverSocketId = getReceiverSocketId(receiverId);
+    const senderSocketId = getReceiverSocketId(senderId);
+
     if (receiverSocketId && io) {
-      io.to(receiverSocketId).emit("newMessage", newMessage);
+      io.to(receiverSocketId).emit("newMessage", formattedMessage);
+    }
+    if (senderSocketId && io) {
+      io.to(senderSocketId).emit("newMessage", formattedMessage);
     }
 
-    res.status(201).json(newMessage);
+    res.status(201).json(formattedMessage);
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Internal server error", error: error.message });
