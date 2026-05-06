@@ -18,6 +18,9 @@ const __dirname = path.resolve();
 const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
 const frontendDistPath = path.join(__dirname, "../frontend1/dist");
 
+// Required when running behind Render/Reverse proxies and using secure cookies.
+app.set("trust proxy", 1);
+
 // Middleware
 app.use(express.json({ limit: "10mb" }));
 app.use(cookieParser());
