@@ -2,13 +2,14 @@ import cloudinary from "../lib/cloudinary.js";
 import User from "../models/user.model.js";
 import Message from "../models/message.model.js";
 import { getReceiverSocketId, io } from "../lib/socket.js";
+import mongoose from "mongoose";
 
 const formatMessage = (message) => ({
-  _id: message._id.toString(),
-  senderId: message.senderId?.toString?.() || message.senderId,
-  receiverId: message.receiverId?.toString?.() || message.receiverId,
-  text: message.text || "",
-  image: message.image || "",
+  _id: String(message._id),
+  senderId: String(message.senderId),
+  receiverId: String(message.receiverId),
+  text: message.text ?? "",
+  image: message.image ?? null,
   createdAt: message.createdAt
 });
 
@@ -30,10 +31,15 @@ export const getMessages = async (req, res) => {
     const { id: userToChatId } = req.params;
     const myId = req.user._id;
 
+    if (!mongoose.isValidObjectId(userToChatId)) {
+      return res.status(400).json({ message: "Invalid user id" });
+    }
+    const userToChatObjectId = new mongoose.Types.ObjectId(userToChatId);
+
     const messages = await Message.find({
       $or: [
-        { senderId: myId, receiverId: userToChatId },
-        { senderId: userToChatId, receiverId: myId }
+        { senderId: myId, receiverId: userToChatObjectId },
+        { senderId: userToChatObjectId, receiverId: myId }
       ]
     }).sort({ createdAt: 1 });
 
@@ -51,13 +57,18 @@ export const sendMessages = async (req, res) => {
     const { id: receiverId } = req.params;
     const senderId = req.user._id;
 
+    if (!mongoose.isValidObjectId(receiverId)) {
+      return res.status(400).json({ message: "Invalid receiver id" });
+    }
+    const receiverObjectId = new mongoose.Types.ObjectId(receiverId);
+
     let imageUrl;
     if (image) {
       const uploadResponse = await cloudinary.uploader.upload(image);
       imageUrl = uploadResponse.secure_url;
     }
 
-    const newMessage = new Message({ senderId, receiverId, text, image: imageUrl });
+    const newMessage = new Message({ senderId, receiverId: receiverObjectId, text, image: imageUrl });
     await newMessage.save();
     const formattedMessage = formatMessage(newMessage);
 
